@@ -1434,7 +1434,7 @@ gboolean GstVideoReceiver::_onBusMessage(GstBus * /* bus */, GstMessage *msg, gp
         const bool recoverableH265PaciError = isRecoverableH265PaciError(msg, error, debug);
 
         if (debug) {
-            qCDebug(GstVideoReceiverLog) << "GStreamer debug:" << debug;
+            qCWarning(GstVideoReceiverLog) << "GStreamer debug:" << debug;
             g_clear_pointer(&debug, g_free);
         }
 

@@ -436,11 +436,14 @@ GstElement* buildWebRtcSource(const QUrl& sourceUrl)
         g_object_set(source, "whep-endpoint", endpoint.constData(), nullptr);
         if (g_object_class_find_property(G_OBJECT_GET_CLASS(source), "video-caps")) {
             GstCaps* videoCaps = gst_caps_from_string(
-                "application/x-rtp,media=video,encoding-name=H264,payload=96,clock-rate=90000;"
-                "application/x-rtp,media=video,encoding-name=H265,payload=97,clock-rate=90000;"
-                "application/x-rtp,media=video,encoding-name=VP8,payload=98,clock-rate=90000;"
-                "application/x-rtp,media=video,encoding-name=VP9,payload=99,clock-rate=90000;"
-                "application/x-rtp,media=video,encoding-name=AV1,payload=100,clock-rate=90000");
+                "application/x-rtp,media=video,encoding-name=H264,payload=96,clock-rate=90000,"
+                "packetization-mode=(string)1,profile-level-id=(string)42e01f,level-asymmetry-allowed=(string)1;"
+                "application/x-rtp,media=video,encoding-name=H264,payload=97,clock-rate=90000,"
+                "packetization-mode=(string)1,profile-level-id=(string)42001f,level-asymmetry-allowed=(string)1;"
+                "application/x-rtp,media=video,encoding-name=H264,payload=98,clock-rate=90000,"
+                "packetization-mode=(string)1,profile-level-id=(string)640c1f,level-asymmetry-allowed=(string)1;"
+                "application/x-rtp,media=video,encoding-name=VP8,payload=99,clock-rate=90000;"
+                "application/x-rtp,media=video,encoding-name=VP9,payload=100,clock-rate=90000");
             if (videoCaps) {
                 g_object_set(source, "video-caps", videoCaps, nullptr);
                 gst_clear_caps(&videoCaps);

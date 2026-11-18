@@ -11,13 +11,19 @@ Rectangle {
     readonly property var wallMgr: QGroundControl.videoManager.videoWallManager
 
     visible: wallMgr ? wallMgr.wallOpen : false
-    color:   "#080b10"
-    z:       QGroundControl.zOrderTopMost + 10
+    color:   transparentStage ? "transparent" : "#080b10"
     focus:   visible
+
+    property bool   transparentStage: false
+    property real   topInset:         0
+    property real   pipLeftInset:     0
+    property real   rightInset:       0
 
     property string layoutMode: "pip" // "pip", "grid", "free"
     property var    layoutMap:  ({})  // { [camId]: { x, y, w, h, z, q, contain } }
     property string mainCamId:  ""
+
+    signal openCameraDialogRequested()
 
     readonly property var enabledCameras: {
         var list = []
@@ -32,8 +38,8 @@ Rectangle {
     }
 
     Keys.onEscapePressed: {
-        if (camDialog.visible) {
-            camDialog.visible = false
+        if (QGroundControl.videoManager.fullScreen) {
+            QGroundControl.videoManager.fullScreen = false
         } else if (wallMgr) {
             wallMgr.wallOpen = false
         }
@@ -49,6 +55,12 @@ Rectangle {
     onEnabledCamerasChanged: {
         if (visible) {
             loadOrInitLayout()
+        }
+    }
+
+    onPipLeftInsetChanged: {
+        if (visible && layoutMode === "pip") {
+            Qt.callLater(pipLayout)
         }
     }
 
@@ -144,12 +156,13 @@ Rectangle {
             z: 1, q: "HD", contain: true
         }
 
-        var pipW = clamp(Math.round(W * 0.28), 220, 460)
-        var pipH = clamp(Math.round(H * 0.28), 140, 300)
+        var startX = Math.max(12, pipLeftInset + 12)
+        var pipW = clamp(Math.round(W * 0.24), 200, 400)
+        var pipH = clamp(Math.round(H * 0.24), 125, 260)
         var gap = 10
         var countSmall = cams.length - 1
         if (countSmall > 0) {
-            var availW = W - 24
+            var availW = Math.max(160, W - startX - rightInset - 12)
             if (countSmall * (pipW + gap) - gap > availW) {
                 pipW = Math.max(140, Math.floor((availW - (countSmall - 1) * gap) / countSmall))
                 pipH = Math.max(90, Math.round(pipW * 0.625))
@@ -157,7 +170,7 @@ Rectangle {
         }
 
         for (var i = 1; i < cams.length; ++i) {
-            var px = 12 + (i - 1) * (pipW + gap)
+            var px = startX + (i - 1) * (pipW + gap)
             var py = Math.max(12, H - pipH - 12)
             map[cams[i].id] = {
                 x: px, y: py, w: pipW, h: pipH,
@@ -267,31 +280,25 @@ Rectangle {
         }
     }
 
-    // Top control bar
+    // Compact floating control pill below FlyViewToolBar
     Rectangle {
         id: topBar
-        anchors.top:   parent.top
-        anchors.left:  parent.left
-        anchors.right: parent.right
-        height:        42
-        color:         "#111827"
-        border.color:  "#1f2937"
-        border.width:  1
-        z:             500
+        anchors.top:              parent.top
+        anchors.topMargin:        wallRoot.topInset + 6
+        anchors.horizontalCenter: parent.horizontalCenter
+        width:                    topBarRow.implicitWidth + 16
+        height:                   36
+        radius:                   6
+        color:                    Qt.rgba(0.07, 0.09, 0.15, 0.88)
+        border.color:             "#334155"
+        border.width:             1
+        z:                        500
+        visible:                  !QGroundControl.videoManager.fullScreen
 
         RowLayout {
-            anchors.fill:    parent
-            anchors.margins: 6
-            spacing:         8
-
-            QGCLabel {
-                text:           qsTr("🎥 Відео-стіна (WebRTC)")
-                color:          "#f8fafc"
-                font.bold:      true
-                font.pointSize: ScreenTools.defaultFontPointSize
-            }
-
-            Item { Layout.fillWidth: true }
+            id: topBarRow
+            anchors.centerIn: parent
+            spacing:          6
 
             QGCButton {
                 text:    qsTr("⧉ PiP")
@@ -307,7 +314,7 @@ Rectangle {
 
             QGCButton {
                 text: qsTr("⚙ Камери (%1)").arg(wallRoot.enabledCameras.length)
-                onClicked: camDialog.visible = true
+                onClicked: wallRoot.openCameraDialogRequested()
             }
 
             QGCButton {
@@ -317,7 +324,7 @@ Rectangle {
             }
 
             QGCButton {
-                text: qsTr("✕ Закрити")
+                text: qsTr("✕")
                 onClicked: {
                     if (wallRoot.wallMgr) {
                         wallRoot.wallMgr.wallOpen = false
@@ -330,34 +337,46 @@ Rectangle {
     // Stage (.wstage)
     Item {
         id: stage
-        anchors.top:    topBar.bottom
-        anchors.left:   parent.left
-        anchors.right:  parent.right
-        anchors.bottom: parent.bottom
-        clip:           true
+        anchors.top:       parent.top
+        anchors.topMargin: QGroundControl.videoManager.fullScreen ? 0 : wallRoot.topInset
+        anchors.left:      parent.left
+        anchors.right:     parent.right
+        anchors.bottom:    parent.bottom
+        clip:              true
 
         onWidthChanged:  if (wallRoot.visible && layoutMode !== "free") Qt.callLater(layoutMode === "grid" ? gridLayout : pipLayout)
         onHeightChanged: if (wallRoot.visible && layoutMode !== "free") Qt.callLater(layoutMode === "grid" ? gridLayout : pipLayout)
 
         // Empty state
-        Column {
+        Rectangle {
             anchors.centerIn: parent
-            spacing:          12
+            width:            emptyCol.implicitWidth + 36
+            height:           emptyCol.implicitHeight + 28
+            radius:           8
+            color:            Qt.rgba(0.05, 0.07, 0.11, 0.88)
+            border.color:     "#334155"
+            border.width:     1
             visible:          wallRoot.enabledCameras.length === 0
 
-            QGCLabel {
-                anchors.horizontalCenter: parent.horizontalCenter
-                text:  qsTr("Немає доданих WebRTC камер")
-                color: "#e2e8f0"
-                font.bold: true
-                font.pointSize: ScreenTools.largeFontPointSize
-            }
+            Column {
+                id: emptyCol
+                anchors.centerIn: parent
+                spacing:          12
 
-            QGCButton {
-                anchors.horizontalCenter: parent.horizontalCenter
-                text:    qsTr("+ Додати камери")
-                primary: true
-                onClicked: camDialog.visible = true
+                QGCLabel {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    text:  qsTr("Немає доданих WebRTC камер")
+                    color: "#e2e8f0"
+                    font.bold: true
+                    font.pointSize: ScreenTools.largeFontPointSize
+                }
+
+                QGCButton {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    text:    qsTr("+ Додати камери")
+                    primary: true
+                    onClicked: wallRoot.openCameraDialogRequested()
+                }
             }
         }
 
@@ -407,9 +426,5 @@ Rectangle {
                 }
             }
         }
-    }
-
-    VideoWallCameraDialog {
-        id: camDialog
     }
 }

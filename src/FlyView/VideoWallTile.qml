@@ -83,6 +83,17 @@ Rectangle {
         fillMode:     tile.containMode ? VideoOutput.PreserveAspectFit : VideoOutput.PreserveAspectCrop
     }
 
+    MouseArea {
+        anchors.fill: parent
+        onPressed: function(mouse) {
+            tile.bringToFrontRequested(tile.camId)
+            mouse.accepted = true
+        }
+        onDoubleClicked: {
+            QGroundControl.videoManager.fullScreen = !QGroundControl.videoManager.fullScreen
+        }
+    }
+
     // Waiting / Status placeholder
     Column {
         anchors.centerIn: parent

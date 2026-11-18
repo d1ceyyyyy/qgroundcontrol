@@ -68,6 +68,8 @@ Item {
         bottomEdgeLeftInset:    _pipView.bottomEdgeLeftInset
     }
 
+    readonly property bool _wallOpen:       QGroundControl.videoManager.videoWallManager ? QGroundControl.videoManager.videoWallManager.wallOpen : false
+
     Item {
         id:                 mapHolder
         anchors.fill:       parent
@@ -89,6 +91,54 @@ Item {
             pipView:    _pipView
         }
 
+        Item {
+            id:             wallPipPlaceholder
+            property Item   pipState: wallPipState
+
+            PipState {
+                id:         wallPipState
+                pipView:    _pipView
+                isDark:     true
+            }
+
+            Rectangle {
+                anchors.fill:   parent
+                color:          "#0d1117"
+                visible:        wallPipState.state === wallPipState.pipState
+
+                Column {
+                    anchors.centerIn:   parent
+                    spacing:            4
+
+                    QGCLabel {
+                        anchors.horizontalCenter:   parent.horizontalCenter
+                        text:                       qsTr("Відео-стіна")
+                        color:                      "#f8fafc"
+                        font.bold:                  true
+                        font.pointSize:             ScreenTools.smallFontPointSize
+                    }
+
+                    QGCLabel {
+                        anchors.horizontalCenter:   parent.horizontalCenter
+                        text:                       qsTr("%1 камер").arg(QGroundControl.videoManager.videoWallManager ? QGroundControl.videoManager.videoWallManager.cameras.length : 0)
+                        color:                      "#94a3b8"
+                        font.pointSize:             ScreenTools.smallFontPointSize * 0.85
+                    }
+                }
+            }
+        }
+
+        VideoWallOverlay {
+            id:                 videoWallOverlay
+            anchors.fill:       parent
+            z:                  _fullItemZorder + 1
+            transparentStage:   _mainWindowIsMap
+            topInset:           QGroundControl.videoManager.fullScreen ? 0 : toolbar.height
+            pipLeftInset:       _pipView.leftEdgeBottomInset
+            rightInset:         widgetLayer.totalToolInsets.rightEdgeBottomInset
+            onOpenCameraDialogRequested: camDialog.visible = true
+        }
+
         PipView {
             id:                     _pipView
             anchors.left:           parent.left
@@ -96,9 +146,9 @@ Item {
             anchors.margins:        _toolsMargin
             item1IsFullSettingsKey: "MainFlyWindowIsMap"
             item1:                  mapControl
-            item2:                  QGroundControl.videoManager.hasVideo ? videoControl : null
-            show:                   QGroundControl.videoManager.hasVideo && !QGroundControl.videoManager.fullScreen &&
-                                        (videoControl.pipState.state === videoControl.pipState.pipState || mapControl.pipState.state === mapControl.pipState.pipState)
+            item2:                  QGroundControl.videoManager.hasVideo ? videoControl : (_wallOpen ? wallPipPlaceholder : null)
+            show:                   (QGroundControl.videoManager.hasVideo || _wallOpen) && !QGroundControl.videoManager.fullScreen &&
+                                        ((item2 && item2.pipState.state === item2.pipState.pipState) || mapControl.pipState.state === mapControl.pipState.pipState)
             z:                      QGroundControl.zOrderWidgets
 
             property real leftEdgeBottomInset: visible ? width + anchors.margins : 0
@@ -185,8 +235,8 @@ Item {
         visible:            !QGroundControl.videoManager.fullScreen
     }
 
-    VideoWallOverlay {
-        id:                 videoWallOverlay
-        anchors.fill:       parent
+    VideoWallCameraDialog {
+        id:                 camDialog
+        z:                  QGroundControl.zOrderTopMost + 20
     }
 }

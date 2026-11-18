@@ -56,7 +56,14 @@
         "vpx",
         "videoconvertscale",
         "videoconvert",
-        "videoscale"
+        "videoscale",
+        "dtls",
+        "nice",
+        "rswebrtc",
+        "sctp",
+        "srtp",
+        "webrtc",
+        "webrtchttp"
       ],
       "android": ["androidmedia", "dav1d"],
       "apple": ["applemedia", "dav1d"],

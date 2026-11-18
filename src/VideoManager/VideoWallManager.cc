@@ -135,8 +135,8 @@ void VideoWallManager::addMediaMtxCameras(const QString &host, int port, const Q
         QVariantMap cam;
         cam.insert(QStringLiteral("id"), camId);
         cam.insert(QStringLiteral("name"), name);
-        cam.insert(QStringLiteral("hdUrl"), QStringLiteral("http://%1:%2/%3HD/whep").arg(cleanHost).arg(port).arg(name));
-        cam.insert(QStringLiteral("sdUrl"), QStringLiteral("http://%1:%2/%3SD/whep").arg(cleanHost).arg(port).arg(name));
+        cam.insert(QStringLiteral("hdUrl"), QStringLiteral("http://%1:%2/%3/whep").arg(cleanHost).arg(port).arg(name));
+        cam.insert(QStringLiteral("sdUrl"), QString());
         cam.insert(QStringLiteral("enabled"), true);
         _cameras.append(cam);
         addedAny = true;

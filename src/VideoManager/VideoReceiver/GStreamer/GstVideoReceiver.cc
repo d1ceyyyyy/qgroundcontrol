@@ -1144,8 +1144,12 @@ void GstVideoReceiver::_ensureVideoSinkInPipeline()
         return;
     }
 
+    // WebRTC streams are already paced and jitter-buffered by webrtcbin; clock-syncing the sink on top
+    // of that causes visible stalls whenever RTP timestamps jitter, so render frames on arrival.
+    const bool isWebRtc = _uri.startsWith(QLatin1String("whep"), Qt::CaseInsensitive)
+                          || _uri.startsWith(QLatin1String("webrtc"), Qt::CaseInsensitive);
     g_object_set(_videoSink,
-                 "sync", (_buffer >= 0),
+                 "sync", (_buffer >= 0) && !isWebRtc,
                  NULL);
 
     (void) gst_object_ref(_videoSink);

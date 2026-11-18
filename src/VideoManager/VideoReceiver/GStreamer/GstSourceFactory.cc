@@ -436,18 +436,24 @@ GstElement* buildWebRtcSource(const QUrl& sourceUrl)
         g_object_set(source, "whep-endpoint", endpoint.constData(), nullptr);
         if (g_object_class_find_property(G_OBJECT_GET_CLASS(source), "video-caps")) {
             GstCaps* videoCaps = gst_caps_from_string(
-                "application/x-rtp,media=video,encoding-name=H264,payload=96,clock-rate=90000,"
+                "application/x-rtp,media=video,encoding-name=H264,payload=102,clock-rate=90000,"
                 "packetization-mode=(string)1,profile-level-id=(string)42e01f,level-asymmetry-allowed=(string)1;"
-                "application/x-rtp,media=video,encoding-name=H264,payload=97,clock-rate=90000,"
+                "application/x-rtp,media=video,encoding-name=H264,payload=103,clock-rate=90000,"
                 "packetization-mode=(string)1,profile-level-id=(string)42001f,level-asymmetry-allowed=(string)1;"
-                "application/x-rtp,media=video,encoding-name=H264,payload=98,clock-rate=90000,"
+                "application/x-rtp,media=video,encoding-name=H264,payload=104,clock-rate=90000,"
                 "packetization-mode=(string)1,profile-level-id=(string)640c1f,level-asymmetry-allowed=(string)1;"
-                "application/x-rtp,media=video,encoding-name=VP8,payload=99,clock-rate=90000;"
-                "application/x-rtp,media=video,encoding-name=VP9,payload=100,clock-rate=90000");
+                "application/x-rtp,media=video,encoding-name=VP8,payload=105,clock-rate=90000;"
+                "application/x-rtp,media=video,encoding-name=VP9,payload=106,clock-rate=90000");
             if (videoCaps) {
                 g_object_set(source, "video-caps", videoCaps, nullptr);
                 gst_clear_caps(&videoCaps);
             }
+        }
+        if (g_object_class_find_property(G_OBJECT_GET_CLASS(source), "audio-caps")) {
+            // Video-only: the default OPUS audio m-line shares a payload type with video and is unused.
+            GstCaps* audioCaps = gst_caps_new_empty();
+            g_object_set(source, "audio-caps", audioCaps, nullptr);
+            gst_clear_caps(&audioCaps);
         }
         return source;
     }

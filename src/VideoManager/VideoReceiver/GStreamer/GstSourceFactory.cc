@@ -420,6 +420,41 @@ GstElement* buildUdpSource(const QUrl& sourceUrl, bool isUdpH264, bool isUdpH265
     return source;
 }
 
+GstElement* buildWebRtcSource(const QUrl& sourceUrl)
+{
+    QUrl endpointUrl(sourceUrl);
+    const QString scheme = endpointUrl.scheme().toLower();
+    if (scheme == QLatin1String("whep") || scheme == QLatin1String("webrtc")) {
+        endpointUrl.setScheme(QStringLiteral("http"));
+    } else if (scheme == QLatin1String("wheps") || scheme == QLatin1String("webrtcs")) {
+        endpointUrl.setScheme(QStringLiteral("https"));
+    }
+
+    const QByteArray endpoint = endpointUrl.toEncoded();
+    GstElement* source = gst_element_factory_make("whepsrc", "source");
+    if (source) {
+        g_object_set(source, "whep-endpoint", endpoint.constData(), nullptr);
+        if (g_object_class_find_property(G_OBJECT_GET_CLASS(source), "video-caps")) {
+            GstCaps* videoCaps = gst_caps_from_string("application/x-rtp,media=video");
+            if (videoCaps) {
+                g_object_set(source, "video-caps", videoCaps, nullptr);
+                gst_clear_caps(&videoCaps);
+            }
+        }
+        return source;
+    }
+
+    source = gst_element_factory_make("whepclientsrc", "source");
+    if (source) {
+        g_object_set(source, "location", endpoint.constData(), nullptr);
+        return source;
+    }
+
+    qCCritical(GstSourceFactoryLog)
+        << "WebRTC source creation failed: neither 'whepsrc' nor 'whepclientsrc' GStreamer plugin is available";
+    return nullptr;
+}
+
 // Wire upstream → (optional rtpjitterbuffer) → binParser, topology chosen by RTP probe (MPEG-TS
 // links via pad-added). Created elements join @p bin; returns false (logged) on failure.
 bool linkSourceToParser(GstElement* bin, GstElement* upstream, GstElement* binParser, const Config& config,
@@ -525,8 +560,11 @@ GstElement* create(const QString& uri, const Config& config)
     const bool isUdpH265 = (scheme == QLatin1String("udp265"));
     const bool isUdpMPEGTS = (scheme == QLatin1String("mpegts"));
     const bool isTcpMPEGTS = (scheme == QLatin1String("tcp"));
+    const bool isWebRtc = (scheme == QLatin1String("whep")) || (scheme == QLatin1String("wheps")) ||
+                          (scheme == QLatin1String("webrtc")) || (scheme == QLatin1String("webrtcs")) ||
+                          (scheme == QLatin1String("http")) || (scheme == QLatin1String("https"));
 
-    if (!isRtsp && !isUdpH264 && !isUdpH265 && !isUdpMPEGTS && !isTcpMPEGTS) {
+    if (!isRtsp && !isUdpH264 && !isUdpH265 && !isUdpMPEGTS && !isTcpMPEGTS && !isWebRtc) {
         qCWarning(GstSourceFactoryLog) << "Unsupported URI scheme:" << scheme << "in" << sourceUrl.toDisplayString(QUrl::RemoveUserInfo);
         return nullptr;
     }
@@ -543,6 +581,8 @@ GstElement* create(const QString& uri, const Config& config)
     do {
         if (isRtsp) {
             source = buildRtspSource(uri, sourceUrl, config, latencyMs);
+        } else if (isWebRtc) {
+            source = buildWebRtcSource(sourceUrl);
         } else if (isTcpMPEGTS) {
             source = buildTcpSource(sourceUrl);
         } else {  // isUdpH264 || isUdpH265 || isUdpMPEGTS
@@ -643,7 +683,7 @@ GstElement* create(const QString& uri, const Config& config)
                 break;
             }
         } else {
-            if (!linkSourceToParser(bin, upstream, binParser, config, latencyMs, isTcpMPEGTS || isUdpMPEGTS, isRtsp)) {
+            if (!linkSourceToParser(bin, upstream, binParser, config, latencyMs, isTcpMPEGTS || isUdpMPEGTS, isRtsp || isWebRtc)) {
                 break;
             }
         }

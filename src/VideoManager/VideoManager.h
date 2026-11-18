@@ -19,6 +19,7 @@ class SubtitleWriter;
 class Vehicle;
 class VideoReceiver;
 class VideoSettings;
+class VideoWallManager;
 
 class VideoManager : public QObject
 {
@@ -26,6 +27,7 @@ class VideoManager : public QObject
     QML_ELEMENT
     QML_UNCREATABLE("")
     Q_MOC_INCLUDE("Vehicle.h")
+    Q_MOC_INCLUDE("VideoWallManager.h")
 
     Q_PROPERTY(bool     autoStreamConfigured    READ autoStreamConfigured                       NOTIFY autoStreamConfiguredChanged)
     Q_PROPERTY(bool     decoding                READ decoding                                   NOTIFY decodingChanged)
@@ -43,6 +45,7 @@ class VideoManager : public QObject
     Q_PROPERTY(QSize    videoSize               READ videoSize                                  NOTIFY videoSizeChanged)
     Q_PROPERTY(QString  imageFile               READ imageFile                                  NOTIFY imageFileChanged)
     Q_PROPERTY(QString  uvcVideoSourceID        READ uvcVideoSourceID                           NOTIFY uvcVideoSourceIDChanged)
+    Q_PROPERTY(VideoWallManager* videoWallManager READ videoWallManager                         CONSTANT)
 
     friend class VideoManagerInitTest;
 
@@ -78,6 +81,7 @@ public:
     QSize videoSize() const { return _videoSize; }
     QString imageFile() const { return _imageFile; }
     QString uvcVideoSourceID() const { return _uvcVideoSourceID; }
+    VideoWallManager *videoWallManager() const { return _videoWallManager; }
     void setfullScreen(bool on);
 
 signals:
@@ -128,6 +132,7 @@ private:
     QList<VideoReceiver*> _videoReceivers;
     SubtitleWriter *_subtitleWriter = nullptr;
     VideoSettings *_videoSettings = nullptr;
+    VideoWallManager *_videoWallManager = nullptr;
     QQuickWindow *_mainWindow = nullptr;
     Vehicle *_activeVehicle = nullptr;
 

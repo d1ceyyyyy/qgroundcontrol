@@ -14,6 +14,7 @@
 #include "VehicleLinkManager.h"
 #include "VideoReceiver.h"
 #include "VideoSettings.h"
+#include "VideoWallManager.h"
 #include "UVCReceiver.h"
 #include "VideoBackend.h"
 
@@ -46,6 +47,7 @@ VideoManager::VideoManager(QObject *parent)
     : QObject(parent)
     , _subtitleWriter(new SubtitleWriter(this))
     , _videoSettings(SettingsManager::instance()->videoSettings())
+    , _videoWallManager(new VideoWallManager(this))
 {
     qCDebug(VideoManagerLog) << this;
 
@@ -307,6 +309,9 @@ void VideoManager::_createVideoReceivers()
 
 void VideoManager::cleanup()
 {
+    if (_videoWallManager) {
+        _videoWallManager->stopAllStreams();
+    }
     for (VideoReceiver *receiver : std::as_const(_videoReceivers)) {
         QGCCorePlugin::instance()->releaseVideoSink(receiver->sink());
     }

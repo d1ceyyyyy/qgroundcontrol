@@ -184,4 +184,9 @@ Item {
         guidedValueSlider:  _guidedValueSlider
         visible:            !QGroundControl.videoManager.fullScreen
     }
+
+    VideoWallOverlay {
+        id:                 videoWallOverlay
+        anchors.fill:       parent
+    }
 }

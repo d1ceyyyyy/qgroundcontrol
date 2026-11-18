@@ -45,6 +45,35 @@ Rectangle {
         }
     }
 
+    // Keyboard control: G = grid, P = PiP, 1..9 = make camera N the main one, Tab = next camera
+    Keys.onPressed: (event) => {
+        const cams = enabledCameras
+        if (event.key === Qt.Key_G) {
+            gridLayout()
+            event.accepted = true
+        } else if (event.key === Qt.Key_P) {
+            pipLayout()
+            event.accepted = true
+        } else if (event.key >= Qt.Key_1 && event.key <= Qt.Key_9) {
+            const idx = event.key - Qt.Key_1
+            if (idx < cams.length && cams[idx].id !== findMainId(layoutMap, cams)) {
+                swapWithMain(cams[idx].id)
+            }
+            event.accepted = true
+        } else if (event.key === Qt.Key_Tab && cams.length > 1) {
+            const mainId = findMainId(layoutMap, cams)
+            let next = 0
+            for (let i = 0; i < cams.length; ++i) {
+                if (cams[i].id === mainId) {
+                    next = (i + 1) % cams.length
+                    break
+                }
+            }
+            swapWithMain(cams[next].id)
+            event.accepted = true
+        }
+    }
+
     onVisibleChanged: {
         if (visible) {
             forceActiveFocus()

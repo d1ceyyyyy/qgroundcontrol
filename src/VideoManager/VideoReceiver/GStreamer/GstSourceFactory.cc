@@ -449,6 +449,13 @@ GstElement* buildWebRtcSource(const QUrl& sourceUrl)
                 gst_clear_caps(&videoCaps);
             }
         }
+        // NACK retransmission + FEC recover lost packets instead of freezing until the next keyframe.
+        if (g_object_class_find_property(G_OBJECT_GET_CLASS(source), "do-retransmission")) {
+            g_object_set(source, "do-retransmission", TRUE, nullptr);
+        }
+        if (g_object_class_find_property(G_OBJECT_GET_CLASS(source), "do-fec")) {
+            g_object_set(source, "do-fec", TRUE, nullptr);
+        }
         if (g_object_class_find_property(G_OBJECT_GET_CLASS(source), "audio-caps")) {
             // Video-only: the default OPUS audio m-line shares a payload type with video and is unused.
             GstCaps* audioCaps = gst_caps_new_empty();
